@@ -1,0 +1,9 @@
+torch==1.4.0
+torchvision==0.5.0
+opencv-python==4.2.0.32
+numpy==1.18.1
+trimesh==3.5.23
+plyfile==0.7.1
+scikit-image==0.16.2
+scikit-learn==0.21.3
+chumpy==0.69

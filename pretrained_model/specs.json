@@ -1,0 +1,52 @@
+{
+    "Description" : "Hand-object together, test point cloud input",
+    "DataSource" : "",
+    "ImageSource" : "",
+    "TrainSplit" : "",
+    "ValSplit" : "",
+    "ModelType" : "PC_2encoder1decoder_VAE",
+    "HandBranch" : true,
+    "ObjectBranch" : true,
+    "ClassifierBranch" : true,
+    "ClassifierWeight" : 0.1,
+    "IndependentObjScale" : false,
+    "IgnorePointFromOtherMesh" : true,
+    "PenetrationLoss" : false,
+    "PenetrationLossWeight" : 1.5,
+    "ContactLoss" : false,
+    "ContactLossWeight" : 0.005,
+    "NetworkSpecs" : {
+        "dims" : [512, 512, 512, 1024, 512, 512, 512, 512],
+        "num_class" : 6,
+        "dropout" : [0, 1, 2, 3, 4, 5, 6, 7],
+        "dropout_prob" : 0.2,
+        "norm_layers" : [0, 1, 2, 3, 4, 5, 6, 7],
+        "latent_in" : [4],
+        "xyz_in_all" : false,
+        "use_tanh" : false,
+        "latent_dropout" : false,
+        "weight_norm" : true
+    },
+    "NumEpochs" : 1600,
+    "LatentSize": 512,
+    "ValFrequency" : 50,
+    "SnapshotFrequency" : 100,
+    "AdditionalSnapshots" : [ 100, 500 ],
+    "LearningRateSchedule" : [
+        { 
+	    "Type" : "Step",
+	    "Initial" : 0.0001,
+	    "Interval" : 800,
+	    "Factor" : 0.5
+        }],
+    "KLSchedule" :
+        { 
+	    "Start" : 400,
+	    "Interval" : 200
+        },
+    "SamplesPerScene" : 20000,
+    "ScenesPerBatch" : 80,
+    "DataLoaderThreads" : 24,
+    "ClampingDistance" : 0.05,
+    "CheckFile" : false
+}
