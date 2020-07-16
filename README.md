@@ -1,8 +1,10 @@
+# Grasping Field: Learning Implicit Representations for Human Grasps - demo
+
+This repository contains a grasp generation demo of "Grasping Field: Learning Implicit Representations for Human Grasps"
 
 The following code samples hand grasps conditioned on given object meshes.
 
-Required library:
-
+## Required library:
 - pytorch (with GPU)
 - trimesh
 - plyfile
@@ -39,10 +41,11 @@ The code is tested on Ubuntu 18.04 with python3
     python3 reconstruct.py
 
 This may take about 20 minutes.
+
 The demo takes objects from `./input` as input, generates 5 samples of grasping hand under `./output`. `./output/meshes/` contains the raw sdf reconstruction and `./output/mano` contains the fitted mano. You can use meshlab to visualize them. Please load the object and hand together for visualization.
 
-The model in `./pretrained_model` is trained only on the ObMan dataset.
-We provide sample object meshes from the HO3D dataset in `./input`.
+The model in `./pretrained_model` is trained only on the [ObMan](https://hassony2.github.io/obman) dataset.
+We include sample [YCB](https://rse-lab.cs.washington.edu/projects/posecnn/) objects used in the [HO3D](https://github.com/shreyashampali/ho3d) dataset in `./input`. These meshes are for example purpose only.
 
 New objects can be given to the model by providing the path to the meshes (`./input`) and the list of object (`input.json`). The object need to be reachable when a hand wrist is at the origin and should not be in `[-x,-z]` quadrant (see example meshes).
 
