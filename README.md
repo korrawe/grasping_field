@@ -1,19 +1,19 @@
 
-The following code sample hand grasps given object meshes.
+The following code samples hand grasps conditioned on given object meshes.
 
 Required library:
 
--pytorch (with GPU)
--trimesh
--plyfile
--scikit-image
--sklearn
--chumpy
--cv2
+- pytorch (with GPU)
+- trimesh
+- plyfile
+- scikit-image
+- sklearn
+- chumpy
+- cv2
 
 You can run the following command in the command line to install all the dependencies.
 
-$ pip3 install -r requirements.txt
+    pip3 install -r requirements.txt
 
 The code is tested on Ubuntu 18.04 with python3
 
@@ -39,11 +39,11 @@ The code is tested on Ubuntu 18.04 with python3
     python3 reconstruct.py
 
 This may take about 20 minutes.
-The demo takes objects from ./input as input, generates 5 samples of grasping hand under ./output. ./output/meshes/ contains the raw sdf reconstruction and ./output/mano contains the fitted mano. You can use meshlab to visualize them. Please load the object and hand together for visualization.
+The demo takes objects from `./input` as input, generates 5 samples of grasping hand under `./output`. `./output/meshes/` contains the raw sdf reconstruction and `./output/mano` contains the fitted mano. You can use meshlab to visualize them. Please load the object and hand together for visualization.
 
 The model in `./pretrained_model` is trained only on the ObMan dataset.
-We provide sample object meshes from the HO3D dataset in ./input.
+We provide sample object meshes from the HO3D dataset in `./input`.
 
-New objects can be given to the model by providing the path to the meshes (./input) and the list of object (input.json). The object need to be reachable when a hand wrist is at the origin and should not be in [-x,-z] quadrant (see example meshes).
+New objects can be given to the model by providing the path to the meshes (`./input`) and the list of object (`input.json`). The object need to be reachable when a hand wrist is at the origin and should not be in `[-x,-z]` quadrant (see example meshes).
 
 
