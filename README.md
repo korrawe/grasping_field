@@ -37,7 +37,7 @@ The code is tested on Ubuntu 18.04 with python3
     ...
 ```
 
-## Sample hand
+## Sample hands
 
     python3 reconstruct.py
 
