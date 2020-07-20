@@ -46,8 +46,8 @@ This may take about 20 minutes.
 The demo takes objects from `./input` as input, generates 5 samples of grasping hand under `./output`. `./output/meshes/` contains the raw sdf reconstruction and `./output/mano` contains the fitted mano. You can use meshlab to visualize them. Please load the object and hand together for visualization.
 
 The model in `./pretrained_model` is trained only on the [ObMan](https://hassony2.github.io/obman) dataset.
-We include a sample object from the [YCB](https://rse-lab.cs.washington.edu/projects/posecnn/) dataset in `./input`. This sample mesh is for demo purpose only, please downlond the full dataset from the website. Note that these objects are also used in the [HO3D](https://github.com/shreyashampali/ho3d) dataset.
+We include two sample objects from the [YCB](https://rse-lab.cs.washington.edu/projects/posecnn/) dataset in `./input`. These sample meshes are for demo purpose only, please downlond the full dataset from the website. Note that these objects are also used in the [HO3D](https://github.com/shreyashampali/ho3d) dataset.
 
-New objects can be given to the model by providing the path to the meshes (`./input`) and the list of object (`input.json`). The object need to be reachable when a hand wrist is at the origin and should not be in `[-x,-z]` quadrant (see example meshes).
+New objects can be given to the model by providing the path to the meshes (`./input`) and the list of object (`input.json`). The object needs to be reachable when a hand wrist is at the origin and should not be in `[-x,-z]` quadrant (see example meshes).
 
 
