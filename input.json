@@ -1,14 +1,6 @@
 {
   "filenames" : [
-    "SiBF10_0418.obj",
-    "ShSu10_0212.obj",
-    "SS1_0619.obj",
-    "SMu40_0422.obj",
-    "ND2_0580.obj",
-    "MDF12_0786.obj",
-    "MC5_0433.obj",
-    "GSF11_0229.obj",
-    "BB10_0291.obj",
-    "ABF10_0145.obj"
+    "box.obj",
+    "power_drill.obj"
   ]
 }
