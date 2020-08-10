@@ -41,7 +41,7 @@ The code is tested on Ubuntu 18.04 with python3
 
     python3 reconstruct.py
 
-This may take about 20 minutes.
+This may take a few minutes.
 
 The demo takes objects from `./input` as input, generates 5 samples of grasping hand under `./output`. `./output/meshes/` contains the raw sdf reconstruction and `./output/mano` contains the fitted mano. You can use meshlab to visualize them. Please load the object and hand together for visualization.
 
@@ -51,3 +51,5 @@ We include two sample objects from the [YCB](https://rse-lab.cs.washington.edu/p
 New objects can be given to the model by providing the path to the meshes (`./input`) and the list of object (`input.json`). The object needs to be reachable when a hand wrist is at the origin and should not be in `[-x,-z]` quadrant (see example meshes).
 
 
+## Acknowledgement
+We sincerely acknowledge: Lars Mescheder and Michael Niemeyer for the detailed discussions on implicit function. Dimitrios Tzionas, Omid Taheri, and Yana Hasson for insightful discussions on MANO and the baseline. Partha Ghosh and Qianli Ma for the help with implementation of the VAE. Benjamin Pellkofer for IT/hardware supports.
