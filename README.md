@@ -78,6 +78,16 @@ Once this is done there should be two executables in the `scripts/sample_points/
 
 More information on the compilation process can be found on [DeepSDF](https://github.com/facebookresearch/DeepSDF)
 
+### Training a Model
+
+Once data has been preprocessed, models can be trained using:
+
+```
+python train.py -e <experiment_directory>
+```
+
+Parameters of training are stored in a "specification file"(`specs.json`) in the experiment directory.
+
 
 ## Acknowledgement
 We sincerely acknowledge: Lars Mescheder and Michael Niemeyer for the detailed discussions on implicit function. Dimitrios Tzionas, Omid Taheri, and Yana Hasson for insightful discussions on MANO and the baseline. Partha Ghosh and Qianli Ma for the help with implementation of the VAE. Benjamin Pellkofer for IT/hardware supports.
