@@ -53,7 +53,7 @@ New objects can be given to the model by providing the path to the meshes (`./in
 ## Training
 ### Pre-processing the Data
 
-For data preparation, we modified the point sampling code from [DeepSDF](https://github.com/facebookresearch/DeepSDF) to compute the distance to both hand and object, and find the associate hand-part label for each points. This can be done with the `scripts/sample_points/preprocess_data.py` executable. The preprocessing code is in C++ and has the following requirements:
+For data preparation, we modified the point sampling code from [DeepSDF](https://github.com/facebookresearch/DeepSDF) to compute the distance to both hand and object, and to find the associate hand-part label for each point. This can be done with the `scripts/sample_points/preprocess_data.py` executable. The preprocessing code is in C++ and has the following requirements:
 
 - [CLI11][1]
 - [Pangolin][2]
