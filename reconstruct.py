@@ -15,22 +15,8 @@ import time
 import utils
 import networks.model as arch
 import pcl2mano.pcl2mano as mano_helper
-# import matplotlib.pyplot as plt
+import utils.misc as misc_utils
 
-
-
-# num_samp_per_scene = 10000
-# scene_per_subbatch = 3 # num_samp_per_scene
-
-# latent_size = 256
-# clamp_dist = 0.1
-
-# start_epoch = 0
-# num_epochs = 500
-# log_frequency = 10 
-
-# checkpoint = 'latest'
-##### end specs #####
 
 def get_spec_with_default(specs, key, default):
     try:
@@ -172,6 +158,132 @@ def get_model(specs, device):
     encoderDecoder = encoderDecoder.to(device)# .cuda()
     
     return encoderDecoder # loaded_model
+
+
+def reconstruct_training(experiment_directory, 
+                split_filename,
+                input_type,
+                input_source,
+                encoderDecoder,
+                saved_model_epoch,
+                specs,
+                hand_branch,
+                obj_branch,
+                model_type='1encoder2decoder',
+                scale=None,
+                cube_dim=128, # 256,
+                verbose=0,
+                fhb=False,
+                dataset_name='ho3d',
+                obj_center=False,
+                label_out=False,
+                sample=False,
+                viz=False):
+    
+    reconstruction_dir = os.path.join(
+        experiment_directory, misc_utils.reconstructions_subdir, str(saved_model_epoch)
+    )
+
+    if not os.path.isdir(reconstruction_dir):
+        os.makedirs(reconstruction_dir)
+
+    reconstruction_meshes_dir = os.path.join(
+        reconstruction_dir, misc_utils.reconstruction_meshes_subdir
+    )
+    if not os.path.isdir(reconstruction_meshes_dir):
+        os.makedirs(reconstruction_meshes_dir)
+    
+    with open(split_filename, "r") as f:
+        train_split = json.load(f)
+    for name in train_split:
+        split_name = name
+        break
+    
+    if verbose:
+        print("Split:", split_name)
+        print(input_source)
+    
+    if input_type == 'point_cloud':
+        dataset = utils.data.PointCloudsSamples(
+            input_source, train_split, load_ram=False, fhb=fhb, model_type=model_type, obj_center=obj_center
+        )
+
+    # load data
+    num_data_loader_threads = 1 
+    logging.debug("loading data with {} threads".format(num_data_loader_threads))
+
+    data_loader = data_utils.DataLoader(
+        dataset,
+        batch_size=1,
+        shuffle=False,
+        num_workers=num_data_loader_threads,
+        drop_last=False,
+    )
+
+    reconstruct_limit = 10000 
+
+    for encoder_input_hand, encoder_input_obj, idx, image_filename in data_loader:
+        if (reconstruct_limit is not None) and idx > reconstruct_limit:
+            break
+        
+        print(image_filename)
+
+        start = time.time()
+        encoderDecoder.eval()
+        # encoderDecoder.encoder.eval()
+        # print(image.shape)
+        encoder_input_hand = encoder_input_hand.cuda()
+        if input_type == 'image':
+            encoder_input_obj = encoder_input_hand
+        else:
+            encoder_input_obj = encoder_input_obj.cuda()
+        # print(image[0,0,:5,:5])
+        # print(image[:3])
+        # print(image.size())
+        
+        # latent = encoderDecoder.encoder(image)
+        # npimg = image[0].cpu().numpy()
+        # plt.imshow(np.transpose(npimg, (1, 2, 0)))
+
+        if 'VAE' in model_type:
+            n_sample = 5
+            print("VAE n=", n_sample)
+            for i in range(n_sample):
+                with torch.no_grad():
+                    latent = encoderDecoder.module.compute_latent(encoder_input_hand, encoder_input_obj, sample=sample)
+                
+                base = os.path.splitext(image_filename[0])
+                out_filename = image_filename[0].split('/')[1] + "_" + str(i)
+                if dataset_name == 'ho3d':
+                    inst = image_filename[0].split('/')
+                    seq = inst[1]
+                    frame_num = inst[2]
+                    out_filename = "_".join([seq, frame_num]) + "_" + str(i)
+                print(out_filename)
+
+                mesh_filename = os.path.join(reconstruction_meshes_dir, split_name, out_filename)
+                if not os.path.exists(os.path.dirname(mesh_filename)):
+                    os.makedirs(os.path.dirname(mesh_filename))
+                print(mesh_filename)
+                
+                obj_branch_tmp = True if i == 0 else False
+                with torch.no_grad():
+                    utils.mesh.create_mesh_combined_decoder(
+                        hand_branch, obj_branch_tmp,
+                        encoderDecoder.module.decoder, latent, mesh_filename, N=cube_dim, max_batch=int(2 ** 18), # N= 256
+                        scale=scale, 
+                        label_out=label_out,
+                        viz=viz
+                    )
+                del latent
+
+            continue
+        
+        end = time.time()
+        if verbose:
+            print("Overall: {}".format(end - start))
+            print("-------------")
+
 
 if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser(
