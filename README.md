@@ -50,6 +50,34 @@ We include two sample objects from the [YCB](https://rse-lab.cs.washington.edu/p
 
 New objects can be given to the model by providing the path to the meshes (`./input`) and the list of object (`input.json`). The object needs to be reachable when a hand wrist is at the origin and should not be in `[-x,-z]` quadrant (see example meshes).
 
+## Training
+### Pre-processing the Data
+
+For data preparation, we modified the point sampling code from [DeepSDF](https://github.com/facebookresearch/DeepSDF) to compute the distance to both hand and object, and to find the associate hand-part label for each point. This can be done with the `scripts/sample_points/preprocess_data.py` executable. The preprocessing code is in C++ and has the following requirements:
+
+- [CLI11][1]
+- [Pangolin][2]
+- [nanoflann][3]
+- [Eigen3][4]
+
+[1]: https://github.com/CLIUtils/CLI11
+[2]: https://github.com/stevenlovegrove/Pangolin
+[3]: https://github.com/jlblancoc/nanoflann
+[4]: https://eigen.tuxfamily.org
+
+With these dependencies, the build process follows the standard CMake procedure:
+
+```
+mkdir build
+cd build
+cmake ..
+make -j
+```
+
+Once this is done there should be two executables in the `scripts/sample_points/bin` directory, one for surface sampling and one for SDF sampling. With the binaries, the dataset can be preprocessed using `preprocess_data.py`.
+
+More information on the compilation process can be found on [DeepSDF](https://github.com/facebookresearch/DeepSDF)
+
 
 ## Acknowledgement
 We sincerely acknowledge: Lars Mescheder and Michael Niemeyer for the detailed discussions on implicit function. Dimitrios Tzionas, Omid Taheri, and Yana Hasson for insightful discussions on MANO and the baseline. Partha Ghosh and Qianli Ma for the help with implementation of the VAE. Benjamin Pellkofer for IT/hardware supports.
