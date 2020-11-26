@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2004-present Facebook. All Rights Reserved.
+# Copyright 2004-2019 Facebook. All Rights Reserved.
 
 import argparse
 import concurrent.futures
@@ -11,9 +11,7 @@ import subprocess
 import deep_sdf
 import deep_sdf.workspace as ws
 
-##
 import shutil
-##
 
 
 def filter_classes_glob(patterns, classes):
@@ -70,19 +68,8 @@ def process_mesh(mesh_filepath_hand,
         target_filepath_obj,
     ] + additional_args
 
-    # subproc = subprocess.Popen(command, stdout=subprocess.DEVNULL) subprocess.PIPE
-    ####
     subproc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = subproc.communicate()
-    ### for debugging ### 
-    # print(target_filepath_hand)
-    # # print("out:", out)
-    # print("out:")
-    # print(out.decode("utf-8").replace('\\n', '\n'))
-    # if err is not None:
-    #     print("err:")
-    #     print(err.decode("utf-8").replace('\\n', '\n'))
-    ### end for debugging ###
     
 
     mesh_out_dir = os.path.dirname(target_filepath_hand)
@@ -95,9 +82,6 @@ def process_mesh(mesh_filepath_hand,
     elif "success object" not in out.decode("utf-8"):
         with open(os.path.join(os.path.dirname(mesh_out_dir) , "invalid", shape_num + '.fail'), 'w') as f:
             f.write(out.decode("utf-8").replace('\\n', '\n'))
-    #####
-    # subproc.wait()
-
 
 def process_mesh_surface(mesh_filepath,
                          target_filepath,
@@ -111,33 +95,8 @@ def process_mesh_surface(mesh_filepath,
         target_filepath,
     ]
 
-    # subproc = subprocess.Popen(command, stdout=subprocess.DEVNULL) subprocess.PIPE
-    ####
     subproc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = subproc.communicate()
-    # ### for debugging ### 
-    # print(target_filepath)
-    # # # print("out:", out)
-    # print("out:")
-    # print(out.decode("utf-8").replace('\\n', '\n'))
-    # if err is not None:
-    #     print("err:")
-    #     print(err.decode("utf-8").replace('\\n', '\n'))
-    # ### end for debugging ###
-    
-
-    # mesh_out_dir = os.path.dirname(target_filepath_hand)
-    # shape_num = os.path.basename(os.path.normpath(mesh_out_dir))
-
-
-    # if "mesh rejected object" in out.decode("utf-8"):
-    #     with open(os.path.join(os.path.dirname(mesh_out_dir) , "invalid", shape_num + '.reject'), 'w') as f:
-    #         f.write(out.decode("utf-8").replace('\\n', '\n'))
-    # elif "success object" not in out.decode("utf-8"):
-    #     with open(os.path.join(os.path.dirname(mesh_out_dir) , "invalid", shape_num + '.fail'), 'w') as f:
-    #         f.write(out.decode("utf-8").replace('\\n', '\n'))
-    #####
-    # subproc.wait()
 
 def append_data_source_map(data_dir, name, source):
 
@@ -153,7 +112,6 @@ def append_data_source_map(data_dir, name, source):
             data_source_map = json.load(f)
 
     if name in data_source_map:
-        # print(data_source_map[name], os.path.abspath(source))
         if not data_source_map[name] == os.path.abspath(source):
             raise RuntimeError(
                 "Cannot add data with the same name and a different source."
@@ -266,11 +224,10 @@ if __name__ == "__main__":
 
     if not os.path.isdir(dest_dir):
         os.makedirs(dest_dir)
-
-    ### 
+    
+    # record invalid files
     if not os.path.isdir(os.path.join(dest_dir, "invalid")):
         os.makedirs(os.path.join(dest_dir, "invalid"))
-    ### 
     print("dest:", dest_dir)
     print("dest invalid:", os.path.join(dest_dir, "invalid"))
 
@@ -292,9 +249,6 @@ if __name__ == "__main__":
     count = 0
     for class_dir in class_directories:
         class_path = os.path.join(args.source_dir, class_dir)
-        # print(class_dir)
-        # print(class_directories)
-        # instance_dirs = class_directories[class_dir]
 
         logging.debug(
             "Processing "
@@ -309,16 +263,11 @@ if __name__ == "__main__":
         if not os.path.isdir(target_dir):
             os.mkdir(target_dir)
 
-        # for instance_dir in instance_dirs: # <- 1 tab
         instance_dir_hand = "hand"
         instance_dir_obj = "obj"
         # print("iii", instance_dir)
         shape_dir_hand = os.path.join(class_path, instance_dir_hand)
         shape_dir_obj = os.path.join(class_path, instance_dir_obj)
-
-        # print(class_path)
-        # print(shape_dir_hand)
-        # print(shape_dir_obj)
 
         processed_filepath_hand = os.path.join(
             target_dir, instance_dir_hand + extension
@@ -327,28 +276,16 @@ if __name__ == "__main__":
             target_dir, instance_dir_obj + extension
         )
 
-        # if args.skip and os.path.isfile(processed_filepath_hand):
-        #     logging.debug("skipping " + processed_filepath_hand) # + " and " + processed_filepath_obj)
-        #     continue
-
         try:
-            # mesh_filename_hand = deep_sdf.data.find_mesh_in_directory(shape_dir_hand)
-            # mesh_filename_obj = deep_sdf.data.find_mesh_in_directory(shape_dir_obj)
-            # print(shape_dir_hand)
-            # print(mesh_filename_hand)
             mesh_filename_hand = os.path.join(shape_dir_hand, "models","model_normalized_sealed.obj") ### 
             mesh_filename_obj = os.path.join(shape_dir_obj, "models","model_normalized.obj")
-            # print(mesh_filename_hand)
-            # print(mesh_filename_obj)
 
             specific_args = []
 
-            # if args.surface_sampling: # tab <-1
             # create normalization directory
             normalization_param_target_dir = os.path.join(
                 normalization_param_dir, class_dir
             )
-            # print(normalization_param_target_dir)
 
             if not os.path.isdir(normalization_param_target_dir):
                 os.mkdir(normalization_param_target_dir)
@@ -356,26 +293,20 @@ if __name__ == "__main__":
             normalization_param_filename = os.path.join(
                 normalization_param_target_dir, instance_dir_obj + ".npz"
             )
-            # specific_args = ["-n", normalization_param_filename] 
             specific_args = ["--normalize", normalization_param_filename]
 
-            # print("dddd", os.path.join(shape_dir_hand, mesh_filename_hand))
-            # print("ffff", os.path.join(shape_dir_obj, mesh_filename_obj))
-            # print("jjj", os.path.join(shape_dir, mesh_filename))
             
             if args.surface_sampling:
                 meshes_targets_and_specific_args.append(
                     (
                         os.path.join(shape_dir_obj, mesh_filename_obj), # obj
                         processed_filepath_obj,
-                        # specific_args,
                     )
                 )
                 meshes_targets_and_specific_args.append(
                     (
                         os.path.join(shape_dir_hand, mesh_filename_hand), # hand
                         processed_filepath_hand,
-                        # specific_args,
                     )
                 )
             else:
@@ -389,32 +320,12 @@ if __name__ == "__main__":
                     )
                 )
 
-            # for copy
-            # shutil.copyfile(processed_filepath_hand, dest)
-            # copy_prefix = "/is/cluster/work/kkarunratanakul/obman/data_new/SdfSamples/train/"
-            # hand_dest = os.path.join(copy_prefix, class_dir, "hand.npz")
-            # obj_dest = os.path.join(copy_prefix, class_dir, "obj.npz")
-            # # print(processed_filepath_hand)
-            # # # print(hand_dest)
-            # # print(processed_filepath_obj)
-            # # print(obj_dest)
-            # shutil.copyfile(processed_filepath_hand, hand_dest)
-            # shutil.copyfile(processed_filepath_obj, obj_dest)
-            # break
-
         except deep_sdf.data.NoMeshFileError:
             logging.warning("No mesh found for instance " + instance_dir_hand)
         except deep_sdf.data.MultipleMeshFileError:
             logging.warning(
                 "Multiple meshes found for instance " + instance_dir_hand
             )
-        # except Exception as e:
-        #     print(e)
-
-        # if count % 100 == 0:
-        #     print(count)
-        # print(count)
-        # count += 1
         
 
     print(" Start sampling")
@@ -426,7 +337,6 @@ if __name__ == "__main__":
                 mesh_filepath,
                 target_filepath,
             ) in meshes_targets_and_specific_args:
-                # print(mesh_filepath)
                 executor.submit(
                     process_mesh_surface,
                     mesh_filepath,
@@ -435,8 +345,7 @@ if __name__ == "__main__":
                 )
         else:
             for (
-                # mesh_filepath,
-                mesh_filepath_hand, ###
+                mesh_filepath_hand,
                 mesh_filepath_obj,
                 target_filepath_hand,
                 target_filepath_obj,
@@ -452,10 +361,10 @@ if __name__ == "__main__":
                 #     specific_args + additional_general_args)
                 executor.submit(
                     process_mesh,
-                    mesh_filepath_hand, ###
-                    mesh_filepath_obj, ###
-                    target_filepath_hand, ###
-                    target_filepath_obj, ###
+                    mesh_filepath_hand,
+                    mesh_filepath_obj,
+                    target_filepath_hand,
+                    target_filepath_obj,
                     executable,
                     specific_args + additional_general_args,
                 )
