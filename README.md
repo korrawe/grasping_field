@@ -1,6 +1,6 @@
 # Grasping Field: Learning Implicit Representations for Human Grasps - demo
 
-This repository contains a grasp generation demo of "Grasping Field: Learning Implicit Representations for Human Grasps"
+This repository contains a grasp generation demo and the training code of [Grasping Field: Learning Implicit Representations for Human Grasps](https://arxiv.org/abs/2008.04451)
 
 The following code samples hand grasps conditioned on given object meshes.
 ![Teaser Image](https://github.com/korrawe/grasping_field_demo/blob/master/resources/sample_hands.png)
