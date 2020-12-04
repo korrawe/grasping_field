@@ -1,0 +1,3 @@
+[submodule "scripts/sample_points/third-party/cnpy"]
+	path = scripts/sample_points/third-party/cnpy
+	url = https://github.com/rogersce/cnpy.git
