@@ -50,6 +50,12 @@ We include two sample objects from the [YCB](https://rse-lab.cs.washington.edu/p
 
 New objects can be given to the model by providing the path to the meshes (`./input`) and the list of object (`input.json`). The object needs to be reachable when a hand wrist is at the origin and should not be in `[-x,-z]` quadrant (see example meshes).
 
+## RGB reconstruction (unknown object)
+
+    python3 reconstruct.py -t rgb_recon_obman
+
+The model is trained on the obman dataset.
+
 ## Training
 ### Pre-processing the Data
 
