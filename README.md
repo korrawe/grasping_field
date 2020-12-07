@@ -1,6 +1,6 @@
 # Grasping Field: Learning Implicit Representations for Human Grasps - demo
 
-This repository contains a grasp generation demo of "Grasping Field: Learning Implicit Representations for Human Grasps"
+This repository contains a grasp generation demo and the training code of [Grasping Field: Learning Implicit Representations for Human Grasps](https://arxiv.org/abs/2008.04451)
 
 The following code samples hand grasps conditioned on given object meshes.
 ![Teaser Image](https://github.com/korrawe/grasping_field_demo/blob/master/resources/sample_hands.png)
@@ -77,6 +77,16 @@ make -j
 Once this is done there should be two executables in the `scripts/sample_points/bin` directory, one for surface sampling and one for SDF sampling. With the binaries, the dataset can be preprocessed using `preprocess_data.py`.
 
 More information on the compilation process can be found on [DeepSDF](https://github.com/facebookresearch/DeepSDF)
+
+### Training a Model
+
+Once data has been preprocessed, models can be trained using:
+
+```
+python train.py -e <experiment_directory>
+```
+
+Parameters of training are stored in a "specification file"(`specs.json`) in the experiment directory.
 
 
 ## Acknowledgement
