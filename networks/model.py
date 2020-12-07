@@ -9,6 +9,28 @@ def maxpool(x, dim=-1, keepdim=False):
     out, _ = x.max(dim=dim, keepdim=keepdim)
     return out
 
+
+def set_parameter_requires_grad(model, feature_extracting):
+    if feature_extracting:
+        for param in model.parameters():
+            param.requires_grad = False
+
+
+def get_encoder(model_name, use_pretrained, feature_extract, output_size):
+    if model_name == "resnet":
+        """ Resnet18
+        """
+        model_ft = models.resnet18(pretrained=use_pretrained)
+        set_parameter_requires_grad(model_ft, feature_extract)
+        num_ftrs = model_ft.fc.in_features
+        model_ft.fc = nn.Linear(num_ftrs, output_size)
+        input_size = 224
+    else:
+        print("Invalid model name, exiting...")
+        exit()
+    return model_ft, input_size
+
+
 # Resnet Blocks
 class ResnetBlockFC(nn.Module):
     ''' Fully connected ResNet Block class.
@@ -68,14 +90,14 @@ class ResnetPointnet(nn.Module):
         self.cond_dim = cond_dim
 
         if cond_dim is None:
-            self.fc_pos = nn.Linear(dim, 2*hidden_dim)
+            self.fc_pos = nn.Linear(dim, 2 * hidden_dim)
         else:
             self.fc_pos = nn.Linear(dim, hidden_dim)
-        self.block_0 = ResnetBlockFC(2*hidden_dim, hidden_dim)
-        self.block_1 = ResnetBlockFC(2*hidden_dim, hidden_dim)
-        self.block_2 = ResnetBlockFC(2*hidden_dim, hidden_dim)
-        self.block_3 = ResnetBlockFC(2*hidden_dim, hidden_dim)
-        self.block_4 = ResnetBlockFC(2*hidden_dim, hidden_dim)
+        self.block_0 = ResnetBlockFC(2 * hidden_dim, hidden_dim)
+        self.block_1 = ResnetBlockFC(2 * hidden_dim, hidden_dim)
+        self.block_2 = ResnetBlockFC(2 * hidden_dim, hidden_dim)
+        self.block_3 = ResnetBlockFC(2 * hidden_dim, hidden_dim)
+        self.block_4 = ResnetBlockFC(2 * hidden_dim, hidden_dim)
         self.fc_c = nn.Linear(hidden_dim, c_dim)
 
         self.actvn = nn.ReLU()
@@ -130,12 +152,12 @@ class ResnetPointnetCond(nn.Module):
         super().__init__()
         self.c_dim = c_dim
 
-        self.fc_pos = nn.Linear(dim, hidden_dim) # 2*hidden_dim)
-        self.block_0 = ResnetBlockFC(2*hidden_dim, hidden_dim)
-        self.block_1 = ResnetBlockFC(2*hidden_dim, hidden_dim)
-        self.block_2 = ResnetBlockFC(2*hidden_dim, hidden_dim)
-        self.block_3 = ResnetBlockFC(2*hidden_dim, hidden_dim)
-        self.block_4 = ResnetBlockFC(2*hidden_dim, hidden_dim)
+        self.fc_pos = nn.Linear(dim, hidden_dim)  # 2*hidden_dim)
+        self.block_0 = ResnetBlockFC(2 * hidden_dim, hidden_dim)
+        self.block_1 = ResnetBlockFC(2 * hidden_dim, hidden_dim)
+        self.block_2 = ResnetBlockFC(2 * hidden_dim, hidden_dim)
+        self.block_3 = ResnetBlockFC(2 * hidden_dim, hidden_dim)
+        self.block_4 = ResnetBlockFC(2 * hidden_dim, hidden_dim)
         self.fc_c = nn.Linear(hidden_dim, c_dim)
 
         self.actvn = nn.ReLU()
@@ -148,7 +170,7 @@ class ResnetPointnetCond(nn.Module):
         net = self.fc_pos(p)
         # concat conditioning vertor
         net = torch.cat([net, cond.expand(net.size())], dim=2)
-        
+
         net = self.block_0(net)
         pooled = self.pool(net, dim=1, keepdim=True).expand(net.size())
         net = torch.cat([net, pooled], dim=2)
@@ -175,7 +197,7 @@ class ResnetPointnetCond(nn.Module):
 
 
 class ModelTwoEncodersOneDecoderVAE(nn.Module):
-    def __init__(self, encoder_hand, encoder_obj, decoder, nb_classes, num_samp_per_scene, 
+    def __init__(self, encoder_hand, encoder_obj, decoder, nb_classes, num_samp_per_scene,
                  classifier_branch=False, use_sampling_trick=False):
         super(ModelTwoEncodersOneDecoderVAE, self).__init__()
         self.encoder_hand = encoder_hand
@@ -190,11 +212,11 @@ class ModelTwoEncodersOneDecoderVAE(nn.Module):
         # print("Sample per scene", self.num_samp_per_scene)
 
         self.hand_encoder_c_dim = int(encoder_hand.c_dim / 2)
-        
+
     def forward(self, x_hand=None, x_obj=None, xyz=None, sample=False):
         x_obj = self.encoder_obj(x_obj)
         latent_obj = x_obj.repeat_interleave(self.num_samp_per_scene, dim=0)
-        
+
         if not sample:
             if self.use_sampling_trick:
                 x_hand = self.encoder_hand(x_hand)
@@ -202,7 +224,7 @@ class ModelTwoEncodersOneDecoderVAE(nn.Module):
                 # condition hand on obj
                 x_hand = self.encoder_hand(x_hand, x_obj)
             mean_z = x_hand[:, :self.hand_encoder_c_dim]  # first half
-            logstd_z = x_hand[:, self.hand_encoder_c_dim:] # second half
+            logstd_z = x_hand[:, self.hand_encoder_c_dim:]  # second half
         else:
             batch_size = x_obj.size(0)
             mean_z = torch.empty(batch_size, 0).cuda()
@@ -218,21 +240,21 @@ class ModelTwoEncodersOneDecoderVAE(nn.Module):
         latent = torch.cat([latent_hand, latent_obj], 1)
         decoder_inputs = torch.cat([latent, xyz], 1)
         x_hand, x_obj, x_class = self.decoder(decoder_inputs)
-        
+
         return x_hand, x_obj, x_class, kl_loss, z_hand
-    
+
     def compute_obj_latent(self, x_obj):
         x_obj = self.encoder_obj(x_obj)
         return x_obj
 
     def compute_latent(self, x_hand=None, x_obj=None, sample=True):
         x_obj = self.encoder_obj(x_obj)
-        
+
         if not sample:
             # condition hand on obj
             x_hand = self.encoder_hand(x_hand, x_obj)
             mean_z = x_hand[:, :self.hand_encoder_c_dim]  # first half
-            logstd_z = x_hand[:, self.hand_encoder_c_dim:] # second half
+            logstd_z = x_hand[:, self.hand_encoder_c_dim:]  # second half
             std_z = torch.zeros(x_obj.size()).cuda()
             q_z = dist.Normal(mean_z, torch.exp(logstd_z))
 
@@ -243,10 +265,10 @@ class ModelTwoEncodersOneDecoderVAE(nn.Module):
             std_z = torch.empty(batch_size, 0).cuda()
             q_z = dist.Normal(torch.zeros(x_obj.size()).cuda(), torch.ones(x_obj.size()).cuda())
             z_hand = q_z.rsample()
-        
+
         latent = torch.cat([z_hand, x_obj], 1)
         # print("latent size", latent.size())
-        
+
         return latent
 
 
@@ -271,7 +293,7 @@ class CombinedDecoder(nn.Module):
         def make_sequence():
             return []
 
-        dims = [latent_size + 3] + dims + [2] #### <<<< 2 outputs instead of 1.
+        dims = [latent_size + 3] + dims + [2]  # <<<< 2 outputs instead of 1.
 
         self.num_layers = len(dims)
         self.num_class = num_class
@@ -283,7 +305,7 @@ class CombinedDecoder(nn.Module):
 
         self.xyz_in_all = xyz_in_all
         self.weight_norm = weight_norm
-        self.use_classifier=use_classifier
+        self.use_classifier = use_classifier
 
         for layer in range(0, self.num_layers - 1):
             if layer + 1 in latent_in:
@@ -367,7 +389,24 @@ class CombinedDecoder(nn.Module):
 
         # hand, object, class label
         if self.use_classifier:
-            return x[:,0].unsqueeze(1), x[:,1].unsqueeze(1), predicted_class
+            return x[:, 0].unsqueeze(1), x[:, 1].unsqueeze(1), predicted_class
         else:
-            return x[:,0].unsqueeze(1), x[:,1].unsqueeze(1), torch.Tensor([0]).cuda()
+            return x[:, 0].unsqueeze(1), x[:, 1].unsqueeze(1), torch.Tensor([0]).cuda()
 
+
+class ModelOneEncodersOneDecoder(nn.Module):
+    def __init__(self, encoder, decoder, nb_classes, num_samp_per_scene, 
+                 hand_branch=True, obj_branch=True, classifier_branch=False):
+        super(ModelOneEncodersOneDecoder, self).__init__()
+        self.encoder = encoder
+        self.decoder = decoder
+        self.num_class = nb_classes
+        self.num_samp_per_scene = num_samp_per_scene
+
+    def forward(self, x1, xyz):
+        x1 = self.encoder(x1)
+        latent = x1.repeat_interleave(self.num_samp_per_scene, dim=0)
+
+        decoder_inputs = torch.cat([latent, xyz], 1)
+        x_hand, x_obj, x_class = self.decoder(decoder_inputs)
+        return x_hand, x_obj, x_class

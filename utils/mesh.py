@@ -135,9 +135,9 @@ def create_mesh_combined_decoder(
 
             head = 0
             while head < num_out_vertices:
-                sample_subset = vertices[head : min(head + max_batch, num_out_vertices), 0:3].cuda()
+                sample_subset = vertices[head: min(head + max_batch, num_out_vertices), 0:3].cuda()
                 sdf_hand, sdf_obj, predicted_class = utils.utils.decode_sdf_multi_output(decoder, latent_vec, sample_subset)
-                out_labels[head : min(head + max_batch, num_out_vertices)] = predicted_class.argmax(dim=1).detach().cpu()
+                out_labels[head: min(head + max_batch, num_out_vertices)] = predicted_class.argmax(dim=1).detach().cpu()
                 head += max_batch
             
             if viz:
@@ -228,7 +228,7 @@ def get_higher_res_cube(
     else:
         min_index = torch.min(min_hand, min_obj)
         max_index = torch.max(max_hand, max_obj)
-    
+
     # Buffer 2 voxels each side
     new_cube_size = (torch.max(max_index - min_index) + 4) * voxel_size
     # print("New cube size", new_cube_size)
@@ -260,7 +260,7 @@ def write_verts_label_to_obj(
     with open(obj_filename_out, 'w') as fp:
         for idx, v in enumerate(mesh_points):
             clr = numpy_label_tensor[idx] * 45.0
-            fp.write( 'v %.4f %.4f %.4f %.2f %.2f %.2f\n' % ( v[0], v[1], v[2], clr, clr, clr) )
+            fp.write('v %.4f %.4f %.4f %.2f %.2f %.2f\n' % ( v[0], v[1], v[2], clr, clr, clr) )
 
 
 def write_verts_label_to_npz(
@@ -284,6 +284,7 @@ def write_verts_label_to_npz(
    
     # with open(npz_filename_out, 'w') as fp:
     np.savez(npz_filename_out, points=mesh_points, labels=numpy_label_tensor)
+
 
 def write_color_labeled_ply(
     pytorch_3d_xyz_tensor,

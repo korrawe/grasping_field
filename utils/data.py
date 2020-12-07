@@ -5,6 +5,7 @@ import torch
 import torch.utils.data
 import trimesh
 from torchvision import transforms
+from skimage import io, transform, color
 
 import utils.misc as misc_utils
 
@@ -34,23 +35,23 @@ class PointCloudInput(torch.utils.data.Dataset):
 
         filename = os.path.join(self.data_source, self.input_files[idx])
         # print("load mesh", filename)
-        
+
         if self.sample_surface:
             global_scale = 5.0
-            input_mesh = trimesh.load(filename, process = False)
+            input_mesh = trimesh.load(filename, process=False)
             surface_points = trimesh.sample.sample_surface(input_mesh, self.pc_sample)[0]
             surface_points = torch.from_numpy(surface_points * global_scale).float()
         else:
             surface_points = torch.from_numpy(load_points(filename)).float()
         # print(surface_points)
-        
+
         return surface_points, idx, self.input_files[idx]
 
 
 def load_points(filename):
     points = []
     # print(filename)
-    with open( filename, 'r') as fp:
+    with open(filename, 'r') as fp:
         for line in fp:
             point = line.strip().split(" ")[1:]
             point = np.asarray(point)
@@ -111,7 +112,7 @@ def unpack_sdf_samples(filename, subsample=None, hand=True, clamp=None, filter_d
         xyz_neg = neg_tensor[:, :3]
         sdf_neg = neg_tensor[:, 3].unsqueeze(1)
         neg_tensor = torch.cat([xyz_neg, neg_sdf_other, sdf_neg], 1)
-    
+
     # split the sample into half
     half = int(subsample / 2)
 
@@ -131,16 +132,16 @@ def unpack_sdf_samples(filename, subsample=None, hand=True, clamp=None, filter_d
 
     # hand part label
     # 0-finger corase, 1-finger fine, 2-contact, 3-sealed wrist
-    hand_part_pos = sample_pos_lab[:,0]
-    hand_part_neg = sample_neg_lab[:,0]
+    hand_part_pos = sample_pos_lab[:, 0]
+    hand_part_neg = sample_neg_lab[:, 0]
     samples = torch.cat([sample_pos, sample_neg], 0)
     labels = torch.cat([hand_part_pos, hand_part_neg], 0)
 
     if clamp:
-        labels[samples[:,3] < -clamp] = -1
-        labels[samples[:,3] > clamp] = -1
+        labels[samples[:, 3] < -clamp] = -1
+        labels[samples[:, 3] > clamp] = -1
         # print(labels)
-    
+
     if not hand:
         labels[:] = -1
     return samples, labels
@@ -165,9 +166,9 @@ def get_instance_filenames(data_source, input_type, encoder_input_source, split,
                 )
                 unusable_count += 1
                 continue
-            
+
             # Object
-            obj_instance_filename = os.path.join(dataset, class_name, "obj.npz"            )
+            obj_instance_filename = os.path.join(dataset, class_name, "obj.npz")
             if check_file and not os.path.isfile(
                 os.path.join(data_source, misc_utils.sdf_samples_subdir, obj_instance_filename)
             ):
@@ -176,7 +177,7 @@ def get_instance_filenames(data_source, input_type, encoder_input_source, split,
                 )
                 unusable_count += 1
                 continue
-            
+
             # Offset and scale
             normalization_params_filename = os.path.join(dataset, class_name, "obj.npz")
             if check_file and not os.path.isfile(
@@ -253,7 +254,7 @@ class SDFSamples(torch.utils.data.Dataset):
         self.dataset_name = dataset_name
         self.data_source = data_source
         self.image_source = image_source
-        
+
         self.hand_branch = hand_branch
         self.obj_branch = obj_branch
 
@@ -270,10 +271,9 @@ class SDFSamples(torch.utils.data.Dataset):
         (self.npyfiles_hand, 
          self.npyfiles_obj,
          self.normalization_params, 
-         self.encoder_input_files) = get_instance_filenames(data_source, input_type, self.encoder_input_source, 
-                                        split, check_file=check_file, fhb=fhb, dataset_name=dataset_name
-                                    )
-        
+         self.encoder_input_files) = get_instance_filenames(data_source, input_type, self.encoder_input_source,
+                                                            split, check_file=check_file, fhb=fhb, dataset_name=dataset_name)
+
         self.indep_obj_scale = indep_obj_scale
         self.same_point = same_point
         self.clamp = clamp
@@ -400,7 +400,6 @@ class PointCloudsSamples(torch.utils.data.Dataset):
         )
 
         self.load_ram = load_ram
-    
 
     def __len__(self):
         return len(self.npyfiles_hand)
@@ -442,3 +441,33 @@ class PointCloudsSamples(torch.utils.data.Dataset):
             # image = io.imread(image_filename)
             # image = self.transform(image)
             # return image , idx, self.imagefiles[idx]
+
+
+class ImagesInput(torch.utils.data.Dataset):
+    def __init__(
+        self,
+        data_source,
+        data_list,
+        image_size=224
+    ):
+        self.data_source = data_source
+        self.input_files = data_list
+
+        self.transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize(image_size),
+            transforms.CenterCrop(image_size),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ])
+
+    def __len__(self):
+        return len(self.input_files)
+
+    def __getitem__(self, idx):
+        filename = os.path.join(self.data_source, self.input_files[idx])
+        image = io.imread(filename)
+        if image.shape[2] == 4:
+            image = image[:, :, :3]
+        image = self.transform(image)
+        return image, idx, self.input_files[idx]
