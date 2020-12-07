@@ -41,16 +41,6 @@ def reconstruct(loaded_model,
                 label_out=False,
                 viz=False,
                 verbose=0):
-
-    # For testing image input
-    # task = "rgb_recon_obman"
-    
-    # output_dir = "./output/reconstruction/"
-    # split_filename = "./input/image/obman_test.json"
-    # input_source = "./input/image/obman_test"
-    # End testing image input
-    # input_type = "point_cloud"
-
     print("Task:", task)
     if task == "sample_grasp" and sample:
         print("Sample hand")
