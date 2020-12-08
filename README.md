@@ -56,6 +56,12 @@ New objects can be given to the model by providing the path to the meshes (`./in
 
 The model is trained on the obman dataset.
 
+## RGB reconstruction (known objects om FHB dataset)
+
+    python3 reconstruct.py -t rgb_recon_fhb
+
+The model is trained on the FHB dataset. The object class is known during inference and is given as input.
+
 ## Training
 ### Pre-processing the Data
 
