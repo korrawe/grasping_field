@@ -51,6 +51,20 @@ def get_model(model_directory, specs, device):
             nb_classes, specs["SamplesPerScene"],
             classifier_branch
         )
+    elif model_type == "pc+1encoder1decoder":
+        # If use 2 encoders, each encoder produces latent vector with half of the total size.
+        half_latent_size = int(latent_size / 2)
+        encoder_obj = arch.ResnetPointnet(c_dim=half_latent_size, hidden_dim=256)
+        encoder_hand, encoder_hand_input_size = arch.get_encoder('resnet', output_size=half_latent_size,
+                                                                 use_pretrained=True, feature_extract=False)
+        combined_decoder = arch.CombinedDecoder(latent_size, **specs["NetworkSpecs"],
+                                                use_classifier=classifier_branch)
+
+        encoderDecoder = arch.ModelTwoEncodersOneDecoder(
+            encoder_hand, encoder_obj, combined_decoder,
+            nb_classes, specs["SamplesPerScene"],
+            classifier_branch
+        )
 
     encoderDecoder = torch.nn.DataParallel(encoderDecoder)
 

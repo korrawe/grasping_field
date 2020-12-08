@@ -395,7 +395,7 @@ class CombinedDecoder(nn.Module):
 
 
 class ModelOneEncodersOneDecoder(nn.Module):
-    def __init__(self, encoder, decoder, nb_classes, num_samp_per_scene, 
+    def __init__(self, encoder, decoder, nb_classes, num_samp_per_scene,
                  hand_branch=True, obj_branch=True, classifier_branch=False):
         super(ModelOneEncodersOneDecoder, self).__init__()
         self.encoder = encoder
@@ -406,6 +406,31 @@ class ModelOneEncodersOneDecoder(nn.Module):
     def forward(self, x1, xyz):
         x1 = self.encoder(x1)
         latent = x1.repeat_interleave(self.num_samp_per_scene, dim=0)
+
+        decoder_inputs = torch.cat([latent, xyz], 1)
+        x_hand, x_obj, x_class = self.decoder(decoder_inputs)
+        return x_hand, x_obj, x_class
+
+
+class ModelTwoEncodersOneDecoder(nn.Module):
+    def __init__(self, encoder_hand, encoder_obj, decoder, nb_classes, num_samp_per_scene,
+                 hand_branch=True, obj_branch=True, classifier_branch=False):
+        super(ModelTwoEncodersOneDecoder, self).__init__()
+        self.encoder_hand = encoder_hand
+        self.encoder_obj = encoder_obj
+        self.decoder = decoder
+        self.num_class = nb_classes
+        self.num_samp_per_scene = num_samp_per_scene
+
+        print(self.num_samp_per_scene)
+
+    def forward(self, x_hand, x_obj, xyz):
+        x_hand = self.encoder_hand(x_hand)
+        latent_hand = x_hand.repeat_interleave(self.num_samp_per_scene, dim=0)
+        x_obj = self.encoder_obj(x_obj)
+        latent_obj = x_obj.repeat_interleave(self.num_samp_per_scene, dim=0)
+
+        latent = torch.cat([latent_hand, latent_obj], 1)
 
         decoder_inputs = torch.cat([latent, xyz], 1)
         x_hand, x_obj, x_class = self.decoder(decoder_inputs)

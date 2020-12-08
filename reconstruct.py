@@ -22,8 +22,11 @@ from networks.model_utils import get_model
 def get_input_type(task):
     if task == "sample_grasp":
         return "point_cloud"
-    else:
+    elif task == "rgb_recon_obman":
         return "image"
+    elif task == "rgb_recon_fhb":
+        return "image_and_point_cloud"
+
 
 def reconstruct(loaded_model, 
                 split_filename,
@@ -66,6 +69,10 @@ def reconstruct(loaded_model,
         dataset = utils.data.ImagesInput(
             input_source, input_list
         )
+    elif input_type == 'image_and_point_cloud':
+        dataset = utils.data.ImagesAndPointCloudInput(
+            input_source, input_list
+        )
 
     # load data
     num_data_loader_threads = 1
@@ -81,42 +88,18 @@ def reconstruct(loaded_model,
 
     loaded_model.eval()
 
-    for encoder_input, idx, filename in data_loader:
+    for batch in data_loader:
+        if input_type == 'image_and_point_cloud':
+            encoder_input, encoder_input_obj, idx, filename = batch
+            encoder_input_obj = encoder_input_obj.to(device)
+        else:
+            encoder_input, idx, filename = batch
+
         print(filename)
         encoder_input = encoder_input.to(device)
-        # print(encoder_input_obj)
-
-        # Reconstruction from img
-        if task == "rgb_recon_obman":
-            with torch.no_grad():
-                latent = loaded_model.module.encoder(encoder_input)
-                # print(latent)
-            out_filename = os.path.splitext(os.path.basename(filename[0]))[0]
-            print("* Processing:", out_filename)
-
-            mesh_filename = os.path.join(output_mesh_dir, out_filename)
-            if not os.path.exists(os.path.dirname(mesh_filename)):
-                os.makedirs(os.path.dirname(mesh_filename))
-            # print(mesh_filename)
-
-            obj_branch = True
-            hand_branch = True
-            with torch.no_grad():
-                utils.mesh.create_mesh_combined_decoder(
-                    hand_branch, obj_branch,
-                    loaded_model.module.decoder, latent, mesh_filename, N=cube_dim, max_batch=int(2 ** 18),  # N = 256
-                    scale=scale, device=device, label_out=label_out, viz=viz
-                )
-            del latent
-            # Fit MANO to the label
-            if label_out:
-                print("...Fitting MANO to mesh...")
-                mesh_out_name = os.path.join(output_mano_dir, out_filename + "_hand_mano.ply")
-                mano_helper.fit_mano(mesh_filename + "_hand_label.npz", mesh_out_name)
-            print("-------------")
 
         # VAE grasp sampling
-        elif task == "sample_grasp":
+        if task == "sample_grasp":
             start = time.time()
             encoder_input_hand = None
             encoder_input_obj = encoder_input
@@ -155,6 +138,40 @@ def reconstruct(loaded_model,
                 print("Overall: {}".format(end - start))
             print("-------------")
 
+        # Reconstruction from img
+        else:
+            with torch.no_grad():
+                if task == "rgb_recon_obman":
+                    latent = loaded_model.module.encoder(encoder_input)
+                    # print(latent)
+                elif task == "rgb_recon_fhb":
+                    latent_hand = loaded_model.module.encoder_hand(encoder_input)
+                    latent_obj = loaded_model.module.encoder_obj(encoder_input_obj)
+                    latent = torch.cat([latent_hand, latent_obj], 1)
+
+            out_filename = os.path.splitext(os.path.basename(filename[0]))[0]
+            print("* Processing:", out_filename)
+
+            mesh_filename = os.path.join(output_mesh_dir, out_filename)
+            if not os.path.exists(os.path.dirname(mesh_filename)):
+                os.makedirs(os.path.dirname(mesh_filename))
+
+            obj_branch = True
+            hand_branch = True
+            with torch.no_grad():
+                utils.mesh.create_mesh_combined_decoder(
+                    hand_branch, obj_branch,
+                    loaded_model.module.decoder, latent, mesh_filename, N=cube_dim, max_batch=int(2 ** 18),  # N = 256
+                    scale=scale, device=device, label_out=label_out, viz=viz
+                )
+            del latent
+            # Fit MANO to the label
+            if label_out:
+                print("...Fitting MANO to mesh...")
+                mesh_out_name = os.path.join(output_mano_dir, out_filename + "_hand_mano.ply")
+                mano_helper.fit_mano(mesh_filename + "_hand_label.npz", mesh_out_name)
+            print("-------------")
+
 
 def reconstruct_training(experiment_directory, 
                 split_filename,
@@ -175,7 +192,7 @@ def reconstruct_training(experiment_directory,
                 label_out=False,
                 sample=False,
                 viz=False):
-    
+
     reconstruction_dir = os.path.join(
         experiment_directory, misc_utils.reconstructions_subdir, str(saved_model_epoch)
     )
@@ -188,17 +205,17 @@ def reconstruct_training(experiment_directory,
     )
     if not os.path.isdir(reconstruction_meshes_dir):
         os.makedirs(reconstruction_meshes_dir)
-    
+
     with open(split_filename, "r") as f:
         train_split = json.load(f)
     for name in train_split:
         split_name = name
         break
-    
+
     if verbose:
         print("Split:", split_name)
         print(input_source)
-    
+
     if input_type == 'point_cloud':
         dataset = utils.data.PointCloudsSamples(
             input_source, train_split, load_ram=False, fhb=fhb, model_type=model_type, obj_center=obj_center
@@ -236,7 +253,7 @@ def reconstruct_training(experiment_directory,
         # print(image[0,0,:5,:5])
         # print(image[:3])
         # print(image.size())
-        
+
         # latent = encoderDecoder.encoder(image)
         # npimg = image[0].cpu().numpy()
         # plt.imshow(np.transpose(npimg, (1, 2, 0)))
@@ -247,7 +264,7 @@ def reconstruct_training(experiment_directory,
             for i in range(n_sample):
                 with torch.no_grad():
                     latent = encoderDecoder.module.compute_latent(encoder_input_hand, encoder_input_obj, sample=sample)
-                
+
                 base = os.path.splitext(image_filename[0])
                 out_filename = image_filename[0].split('/')[1] + "_" + str(i)
                 if dataset_name == 'ho3d':
@@ -261,7 +278,7 @@ def reconstruct_training(experiment_directory,
                 if not os.path.exists(os.path.dirname(mesh_filename)):
                     os.makedirs(os.path.dirname(mesh_filename))
                 print(mesh_filename)
-                
+
                 obj_branch_tmp = True if i == 0 else False
                 with torch.no_grad():
                     utils.mesh.create_mesh_combined_decoder(
@@ -274,7 +291,7 @@ def reconstruct_training(experiment_directory,
                 del latent
 
             continue
-        
+
         end = time.time()
         if verbose:
             print("Overall: {}".format(end - start))
@@ -286,10 +303,13 @@ def get_default_args(args):
         args.model_directory = "./pretrained_model/reconstruction/obman"
         args.split_filename = "./input/image/obman_test.json"
         args.input_source = "./input/image/obman_test"
-        args.output_dest = "./output/reconstruction/"
+        args.output_dest = "./output/reconstruction_obman/"
 
     elif args.task == "rgb_recon_fhb":
-        pass
+        args.model_directory = "./pretrained_model/reconstruction/fhb"
+        args.split_filename = "./input/image/fhb_test.json"
+        args.input_source = "./input/image/fhb_test"
+        args.output_dest = "./output/reconstruction_fhb/"
     return args
 
 

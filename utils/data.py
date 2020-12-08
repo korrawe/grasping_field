@@ -266,11 +266,11 @@ class SDFSamples(torch.utils.data.Dataset):
 
         if image_source:
             self.encoder_input_source = image_source
-        else: 
+        else:
             self.encoder_input_source = None
-        (self.npyfiles_hand, 
+        (self.npyfiles_hand,
          self.npyfiles_obj,
-         self.normalization_params, 
+         self.normalization_params,
          self.encoder_input_files) = get_instance_filenames(data_source, input_type, self.encoder_input_source,
                                                             split, check_file=check_file, fhb=fhb, dataset_name=dataset_name)
 
@@ -316,9 +316,9 @@ class SDFSamples(torch.utils.data.Dataset):
                 pass
             else:
                 encoder_input_hand = get_negative_surface_points(filename_hand, self.pc_sample)
-                encoder_input_obj =  get_negative_surface_points(filename_obj, self.pc_sample)
+                encoder_input_obj = get_negative_surface_points(filename_obj, self.pc_sample)
             scale, offset = unpack_normal_params(norm_params_filename)
-            
+
             # If only hand branch or obj branch is used, subsample is not reduced by half
             # to maintain the same number of samples used when trained with two branches.
             if not self.same_point or not (self.hand_branch and self.obj_branch):
@@ -342,7 +342,7 @@ class SDFSamples(torch.utils.data.Dataset):
 
                 if self.input_type == 'point_cloud':
                     encoder_input_obj = encoder_input_obj / scale - offset
-            
+
             if 'VAE' in self.model_type and self.obj_center:
                 # normalize point cloud
                 (encoder_input_hand, encoder_input_obj,
@@ -425,14 +425,14 @@ class PointCloudsSamples(torch.utils.data.Dataset):
         else:
             # pc_sample = 500
             encoder_input_hand = get_negative_surface_points(filename_hand, self.pc_sample)
-            encoder_input_obj =  get_negative_surface_points(filename_obj, self.pc_sample)
+            encoder_input_obj = get_negative_surface_points(filename_obj, self.pc_sample)
 
             scale, offset = unpack_normal_params(norm_params_filename)
 
             # print(obj_samples[0:2])
             if not self.indep_obj_scale:
                 encoder_input_obj = encoder_input_obj / scale - offset
-            
+
             if 'VAE' in self.model_type and self.obj_center:
                 encoder_input_hand, encoder_input_obj = normalize_obj_center(encoder_input_hand, encoder_input_obj)
                 # print("object center!!!")
@@ -471,3 +471,51 @@ class ImagesInput(torch.utils.data.Dataset):
             image = image[:, :, :3]
         image = self.transform(image)
         return image, idx, self.input_files[idx]
+
+
+class ImagesAndPointCloudInput(torch.utils.data.Dataset):
+    def __init__(
+        self,
+        data_source,
+        data_list,
+        image_size=224,
+    ):
+        self.data_source = data_source
+        self.input_files = data_list
+
+        self.transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize(image_size),
+            transforms.CenterCrop(image_size),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ])
+
+        def load_surface_points(filename):
+            mesh = trimesh.load(filename, process=False)
+            return torch.from_numpy(np.array(mesh.vertices)).float()
+
+        self.obj_pc = {}
+        self.obj_pc["juice"] = load_surface_points(os.path.join(data_source, "object_models/juice_points.ply"))
+        self.obj_pc["liquid_soap"] = load_surface_points(os.path.join(data_source, "object_models/liquid_soap_points.ply"))
+        self.obj_pc["milk"] = load_surface_points(os.path.join(data_source, "object_models/milk_points.ply"))
+        self.obj_pc["salt"] = load_surface_points(os.path.join(data_source, "object_models/salt_points.ply"))
+
+    def __len__(self):
+        return len(self.input_files)
+
+    def __getitem__(self, idx):
+        filename = os.path.join(self.data_source, self.input_files[idx])
+
+        image = io.imread(filename)
+        if image.shape[2] == 4:
+            image = image[:, :, :3]
+        image = self.transform(image)
+        name = self.input_files[idx]
+
+        if "juice" in name: encoder_input_obj = self.obj_pc["juice"]
+        elif "liquid_soap" in name: encoder_input_obj = self.obj_pc["liquid_soap"]
+        elif "milk" in name: encoder_input_obj = self.obj_pc["milk"]
+        elif "salt" in name: encoder_input_obj = self.obj_pc["salt"]
+
+        return image, encoder_input_obj, idx, self.input_files[idx]
